@@ -6,6 +6,12 @@
 
   tasks:
   - docker_machine:
+      name: test-machine-generic
+      state: present
+      driver: generic
+      generic_ip_address: "1.2.3.4"
+      generic_ssh_user: "ubuntu"
+  - docker_machine:
       name: test-machine2
       state: present
       driver: virtualbox
