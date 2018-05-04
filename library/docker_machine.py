@@ -4,7 +4,7 @@ from subprocess import Popen, PIPE
 
 
 DRIVERS = [
-    'amazonec2', 'azure', 'digitalocean', 'google', 'openstack', 'rackspace',
+    'amazonec2', 'azure', 'digitalocean', 'google', 'generic', 'openstack', 'rackspace',
     'softlayer', 'virtualbox', 'vmwarevcloudair', 'vmwarevsphere'
 ]
 
@@ -35,9 +35,24 @@ def docker_machine_create(module):
         handle_digitalocean(cmd, params)
     elif 'virtualbox' == params['driver']:
         handle_virtualbox(cmd, params)
+    elif 'generic' == params['driver']:
+        handle_generic(cmd, params)
     cmd.append(params['name'])
     command(module, cmd)
 
+
+def handle_generic(cmd, params):
+    cmd.extend([
+        '--generic-ip-address', params['generic_ip_address']
+    ])
+    cmd.extend([
+        '--generic-ssh-user', params['generic_ssh_user']
+    ])
+
+    if params['generic_ssh_key']:
+        cmd.extend([
+            '--generic-ssh-key', params['generic_ssh_key']
+        ])
 
 
 def handle_virtualbox(cmd, params):
@@ -128,6 +143,10 @@ def main():
             virtualbox_share_folder=dict(),
             virtualbox_ui_type=dict(),
             virtualbox_memory=dict(),
+
+            generic_ip_address=dict(),
+            generic_ssh_user=dict(),
+            generic_ssh_key=dict(),
         ),
     )
     state = module.params['state']
@@ -146,7 +165,19 @@ def main():
             else:
                 changed = False
 
-        if 'virtualbox' == module.params['driver']:
+        elif 'virtualbox' == module.params['driver']:
+
+            if not docker_machine_exists(module):
+                docker_machine_create(module)
+            else:
+                changed = False
+
+        elif 'generic' == module.params['driver']:
+            if not module.params['generic_ip_address']:
+                module.fail_json(msg='Generic ip address required.')
+
+            if not module.params['generic_ssh_user']:
+                module.fail_json(msg='Generic ssh user required.')
 
             if not docker_machine_exists(module):
                 docker_machine_create(module)
